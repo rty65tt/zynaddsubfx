@@ -31,6 +31,8 @@
 //Velocity Sensing function
 extern REALTYPE VelF(REALTYPE velocity, unsigned char scaling);
 
+extern bool isPlugin;
+
 bool fileexists(const char *filename);
 
 #define N_DETUNE_TYPES 4 //the number of detune types

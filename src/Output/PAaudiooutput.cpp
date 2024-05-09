@@ -26,9 +26,11 @@ Master   *PAmaster;
 PaStream *stream;
 REALTYPE *outl, *outr;
 
-int PAprocess(void *inputBuffer, void *outputBuffer,
-              unsigned long framesPerBuffer,
-              PaTimestamp outTime, void *userData)
+int PAprocess( const void *inputBuffer, void *outputBuffer,
+                           unsigned long framesPerBuffer,
+                           const PaStreamCallbackTimeInfo* timeInfo,
+                           PaStreamCallbackFlags statusFlags,
+                           void *userData )
 {
     if(framesPerBuffer != SOUND_BUFFER_SIZE) {
         fprintf(
@@ -65,7 +67,6 @@ void PAaudiooutputinit(Master *master_)
                          paFloat32,
                          SAMPLE_RATE,
                          SOUND_BUFFER_SIZE,
-                         0,
                          PAprocess,
                          NULL);
     Pa_StartStream(stream);

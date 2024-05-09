@@ -120,6 +120,23 @@ void Master::NoteOn(unsigned char chan,
 
     noteon(chan, note, velocity);
 }
+/*
+ * Note On Messages (velocity=0 for NoteOff)
+ */
+void Master::noteOn(char chan, char note, char velocity)
+{
+    if(velocity) {
+        for(int npart = 0; npart < NUM_MIDI_PARTS; ++npart)
+            if(chan == part[npart]->Prcvchn) {
+                fakepeakpart[npart] = velocity * 2;
+                if(part[npart]->Penabled)
+                    part[npart]->NoteOn(note, velocity, keyshift);
+            }
+    }
+    else
+        this->noteOff(chan, note);
+    HDDRecorder.triggernow();
+}
 
 /*
  * Internal Note On (velocity=0 for NoteOff)
@@ -157,6 +174,7 @@ void Master::NoteOff(unsigned char chan, unsigned char note)
 /*
  * Internal Note Off
  */
+
 void Master::noteoff(unsigned char chan, unsigned char note)
 {
     int npart;
@@ -166,10 +184,28 @@ void Master::noteoff(unsigned char chan, unsigned char note)
     ;
 }
 
+void Master::noteOff(char chan, char note)
+{
+    for(int npart = 0; npart < NUM_MIDI_PARTS; ++npart)
+        if((chan == part[npart]->Prcvchn) && part[npart]->Penabled)
+            part[npart]->NoteOff(note);
+}
+
 /*
  * Controllers
  */
 void Master::SetController(unsigned char chan, unsigned int type, int par)
+{
+    dump.dumpcontroller(chan, type, par);
+
+    setcontroller(chan, type, par);
+}
+
+
+/*
+ * Controllers
+ */
+void Master::setController(char chan, int type, int par)
 {
     dump.dumpcontroller(chan, type, par);
 
@@ -239,6 +275,12 @@ void Master::partonoff(int npart, int what)
         part[npart]->Penabled = 1;
         fakepeakpart[npart]   = 0;
     }
+}
+
+void Master::setMasterChangedCallback(void(*cb)(void*,Master*), void *ptr)
+{
+    mastercb     = cb;
+    mastercb_ptr = ptr;
 }
 
 /*
@@ -703,7 +745,7 @@ int Master::getalldata(char **data)
     return strlen(*data) + 1;
 }
 
-void Master::putalldata(char *data, int size)
+void Master::putalldata(char *data)
 {
     XMLwrapper *xml = new XMLwrapper();
     if(!xml->putXMLdata(data)) {

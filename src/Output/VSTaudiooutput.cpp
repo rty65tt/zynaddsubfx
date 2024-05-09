@@ -35,12 +35,12 @@ void VSTSynth::process(float **inputs, float **outputs, long sampleframes)
 
 void VSTSynth::processReplacing(float **inputs,
                                 float **outputs,
-                                long sampleframes)
+                                int sampleframes)
 {
     process(inputs, outputs, sampleframes);
 }
 
-long int VSTSynth::canDo(char *txt)
+int VSTSynth::canDo(char *txt)
 {
     if(strcmp(txt, "receiveVstEvents") == 0)
         return 1;
@@ -63,6 +63,7 @@ bool VSTSynth::getProductString(char *txt)
 
 void VSTSynth::resume()
 {
-    wantEvents();
+    //wantEvents();
+    DECLARE_VST_DEPRECATED (wantEvents) ();
 }
 

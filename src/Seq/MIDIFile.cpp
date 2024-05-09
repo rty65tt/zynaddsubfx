@@ -235,8 +235,8 @@ void MIDIFile::parsenoteoff(char ntrack, char chan, unsigned int dt)
     unsigned char note;
     note = getbyte();
 
-    unsigned char noteoff_velocity = getbyte(); //unused by zynaddsubfx
-    noteoff_velocity = 0;
+    //unsigned char noteoff_velocity = getbyte(); //unused by zynaddsubfx
+    //noteoff_velocity = 0;
     if(chan >= NUM_MIDI_CHANNELS)
         return;
 

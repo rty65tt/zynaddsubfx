@@ -41,7 +41,8 @@ bool verbose = false;
 
 const char *XMLwrapper_whitespace_callback(mxml_node_t *node, int where)
 {
-    const char *name = node->value.element.name;
+//    const char *name = node->value.element.name;
+    const char *name = mxmlGetElement(node);
 
     if((where == MXML_WS_BEFORE_OPEN) && (!strcmp(name, "?xml")))
         return NULL;
@@ -288,10 +289,17 @@ void XMLwrapper::beginbranch(const string &name, int id)
 void XMLwrapper::endbranch()
 {
     if(verbose)
+/*/// rty65tt
         cout << "endbranch()" << node << "-" << node->value.element.name
              << " To "
              << node->parent << "-" << node->parent->value.element.name << endl;
     node = node->parent;
+*/
+        cout << "endbranch()" << node << "-" << mxmlGetElement(node)
+             << " To "
+             << mxmlGetParent(node) << "-" << mxmlGetElement(mxmlGetParent(node)) << endl;
+    node = mxmlGetParent(node);
+
 }
 
 
@@ -308,7 +316,7 @@ int XMLwrapper::loadXMLfile(const string &filename)
     if(xmldata == NULL)
         return -1;                //the file could not be loaded or uncompressed
 
-    root = tree = mxmlLoadString(NULL, xmldata, MXML_OPAQUE_CALLBACK);
+    root = tree = mxmlLoadString(NULL, removeBlanks(xmldata), MXML_OPAQUE_CALLBACK);
 
     delete [] xmldata;
 
@@ -429,10 +437,17 @@ int XMLwrapper::enterbranch(const string &name, int id)
 void XMLwrapper::exitbranch()
 {
     if(verbose)
+/*
         cout << "exitbranch()" << node << "-" << node->value.element.name
              << " To "
              << node->parent << "-" << node->parent->value.element.name << endl;
     node = node->parent;
+*/
+        cout << "exitbranch()" << node << "-" << mxmlGetElement(node)
+             << " To "
+             << mxmlGetParent(node) << "-" << mxmlGetElement(mxmlGetParent(node)) << endl;
+    node = mxmlGetParent(node);
+
 }
 
 
@@ -508,7 +523,7 @@ int XMLwrapper::getparbool(const string &name, int defaultpar) const
 void XMLwrapper::getparstr(const string &name, char *par, int maxstrlen) const
 {
     ZERO(par, maxstrlen);
-    const mxml_node_t *tmp = mxmlFindElement(node,
+    mxml_node_t *tmp = mxmlFindElement(node,
                                              node,
                                              "string",
                                              "name",
@@ -517,6 +532,7 @@ void XMLwrapper::getparstr(const string &name, char *par, int maxstrlen) const
 
     if(tmp == NULL)
         return;
+/*
     if(tmp->child == NULL)
         return;
     if(tmp->child->type == MXML_OPAQUE) {
@@ -528,18 +544,30 @@ void XMLwrapper::getparstr(const string &name, char *par, int maxstrlen) const
         snprintf(par, maxstrlen, "%s", tmp->child->value.text.string);
         return;
     }
+*/
+    if(mxmlGetFirstChild(tmp) == NULL)
+        return;
+    if(mxmlGetType(mxmlGetFirstChild(tmp)) == MXML_OPAQUE) {
+        snprintf(par, maxstrlen, "%s", mxmlGetOpaque(mxmlGetFirstChild(tmp)));
+        return;
+    }
+    if((mxmlGetType(mxmlGetFirstChild(tmp)) == MXML_TEXT)
+       && (mxmlGetFirstChild(tmp) != NULL)) {
+        snprintf(par, maxstrlen, "%s", mxmlGetText(mxmlGetFirstChild(tmp),NULL));
+        return;
+    }
 }
 
 string XMLwrapper::getparstr(const string &name,
                              const std::string &defaultpar) const
 {
-    const mxml_node_t *tmp = mxmlFindElement(node,
+    mxml_node_t *tmp = mxmlFindElement(node,
                                              node,
                                              "string",
                                              "name",
                                              name.c_str(),
                                              MXML_DESCEND_FIRST);
-
+/*
     if((tmp == NULL) || (tmp->child == NULL))
         return defaultpar;
 
@@ -550,8 +578,21 @@ string XMLwrapper::getparstr(const string &name,
     if((tmp->child->type == MXML_TEXT)
        && (tmp->child->value.text.string != NULL))
         return tmp->child->value.text.string;
+*/
+
+    if((tmp == NULL) || (mxmlGetFirstChild(tmp) == NULL))
+        return defaultpar;
+
+    if(mxmlGetType(mxmlGetFirstChild(tmp)) == MXML_OPAQUE
+       && (mxmlGetOpaque(mxmlGetFirstChild(tmp)) != NULL))
+        return mxmlGetOpaque(mxmlGetFirstChild(tmp));
+
+    if(mxmlGetType(mxmlGetFirstChild(tmp)) == MXML_TEXT
+       && (mxmlGetText(mxmlGetFirstChild(tmp),NULL) != NULL))
+        return mxmlGetText(mxmlGetFirstChild(tmp),NULL);
 
     return defaultpar;
+
 }
 
 REALTYPE XMLwrapper::getparreal(const char *name, REALTYPE defaultpar) const

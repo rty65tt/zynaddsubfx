@@ -5,3 +5,9 @@ src/UI/*.cc
 src/zynaddsubfx
 src/Tests/runner
 src/Tests/runner.cpp
+build
+install
+release
+Release
+DPF
+exlibs

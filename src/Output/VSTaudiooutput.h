@@ -28,7 +28,7 @@
 #include "../Misc/Master.h"
 #include "../UI/MasterUI.h"
 
-#include "../../../vstsdk2/source/common/audioeffectx.h"
+#include "public.sdk/source/vst2.x/audioeffectx.h"
 
 class VSTSynth:public AudioEffectX
 {
@@ -39,14 +39,14 @@ class VSTSynth:public AudioEffectX
         virtual void process(float **inputs, float **outputs, long sampleframes);
         virtual void processReplacing(float **inputs,
                                       float **outputs,
-                                      long sampleframes);
-        virtual long processEvents(VstEvents *events); //this is used for Midi input
-        virtual long int canDo(char *txt);
+                                      int sampleframes);
+        virtual int processEvents(VstEvents *events); //this is used for Midi input
+        virtual int canDo(char *txt);
         virtual bool getVendorString(char *txt);
         virtual bool getProductString(char *txt);
         virtual void resume();
 
-        virtual long getChunk(void **data, bool isPreset = false);
+        virtual int getChunk(void **data, bool isPreset = false);
         virtual long setChunk(void *data, long size, bool isPreset = false);
 
         MasterUI *ui;

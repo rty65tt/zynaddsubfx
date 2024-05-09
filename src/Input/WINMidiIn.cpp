@@ -26,6 +26,7 @@
 #include <mmsystem.h>
 #include <pthread.h>
 
+
 #include "WINMidiIn.h"
 #include "MidiIn.h"
 #include "../Misc/Util.h"
@@ -37,7 +38,7 @@ MidiIn  midictl; //used to convert the controllers to ZynAddSubFX controllers
 void CALLBACK WinMidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance,
                             DWORD dwParam1, DWORD dwParam2)
 {
-    int midicommand = MidiNull;
+    //int midicommand = MidiNull;
     if(wMsg == MIM_DATA) {
         int cmd, par1, par2;
         cmd  = dwParam1 & 0xff;
@@ -80,7 +81,7 @@ void InitWinMidi(Master *master_)
     long int result =
         midiInOpen(&winmidiinhandle,
                    config.cfg.WindowsMidiInId,
-                   (DWORD)WinMidiInProc,
+                   (DWORD_PTR)WinMidiInProc,
                    0,
                    CALLBACK_FUNCTION);
     result = midiInStart(winmidiinhandle);

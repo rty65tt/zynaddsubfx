@@ -1,11 +1,73 @@
-cmake_minimum_required(VERSION 2.6)
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
-project(zynaddsubfx)
+cmake_minimum_required(VERSION 3.20)
 
-enable_testing()
-#Currently the only directory that uses cmake
+SET(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+SET(VCPKG_INSTALL_OPTIONS --allow-unsupported)
+SET(VCPKG_DEFAULT_TRIPLET  x64-mingw-static)
+SET(VCPKG_TARGET_TRIPLET x64-mingw-static)
+#set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
+
+project(zynaddsubfx)
+set(VERSION "2.4.1-mod")
+set(CMAKE_COLOR_MAKEFILE ON)
+
+SET (OS_PORT WINDOWS)
+SET (FFTW_VERSION 3)
+SET (ASM_F2I YES CACHE BOOL "ASM_F2I")
+SET (DISABLE_GUI NO)
+SET (WINDOWS_MIDIIN WIN)
+SET (WINDOWS_AUDIOOUT PA)
+
+SET (WINDOWS_VST NO)
+IF(WINDOWS_VST)
+	SET(MIDIIN VST)
+	SET(AUDIOOUT VST)
+ELSE()
+	SET(MIDIIN ${WINDOWS_MIDIIN})
+	SET(AUDIOOUT ${WINDOWS_AUDIOOUT})
+ENDIF()
+
+set(CMAKE_C_COMPILER   gcc)
+set(CMAKE_CXX_COMPILER g++)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -m64 -s -DNDEBUG  ")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -m64 -s -DNDEBUG  -Wl,-subsystem,console ")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -m64 -s -DNDEBUG  -Wl,-subsystem,windows ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+
+SET(VST2_LIB_PATH "${CMAKE_SOURCE_DIR}/exlibs/vstsdk2 ")
+
+include_directories(
+	${VST2_LIB_PATH}
+	${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include
+	)
+
+set(BUILD_SHARED_LIBS OFF)
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-s -pipe -Wl,-subsystem,console")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-s -pipe -Wl,-subsystem,windows")
+set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,-s -pipe -Wl,-subsystem,windows")
+
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static")
+
+set(VST_DEF_FILE "${CMAKE_SOURCE_DIR}/src/vst.def" )
+
+#set(CMAKE_DEFAULT_BUILD_TYPE Release)
+
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release CACHE STRING "..." FORCE)
+endif()
+
 add_subdirectory(src)
 
-install(FILES AUTHORS.txt COPYING FAQ.txt HISTORY.txt README.txt
-	DESTINATION share/doc/zynaddsubfx
-	)
+message(STATUS "===========================================")
+message(STATUS "CMAKE_CXX_STANDARD        is: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CMAKE_CXX_FLAGS           is: ${CMAKE_CXX_FLAGS}")
+message(STATUS "CMAKE_BUILD_TYPE          is: ${CMAKE_BUILD_TYPE}")
+message(STATUS "CMAKE_EXE_LINKER_FLAGS    is: ${CMAKE_EXE_LINKER_FLAGS}")
+message(STATUS "CMAKE_MODULE_LINKER_FLAGS is: ${CMAKE_MODULE_LINKER_FLAGS}")
+message(STATUS "===========================================")

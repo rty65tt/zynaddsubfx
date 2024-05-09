@@ -26,264 +26,55 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#ifdef OS_LINUX
-#include <getopt.h>
-#elif OS_WINDOWS
-#include <winbase.h>
+
 #include <windows.h>
-#endif
+#include <winbase.h>
 
 #include "Misc/Master.h"
 #include "Misc/Util.h"
 #include "Misc/Dump.h"
 extern Dump dump;
 
-#ifdef ALSAMIDIIN
-#include "Input/ALSAMidiIn.h"
-#endif
-
-#ifdef OSSMIDIIN
-#include "Input/OSSMidiIn.h"
-#endif
-
-#if (defined(NONEMIDIIN) || defined(VSTMIDIIN) || defined(DSSIMIDIIN))
+#if (defined(NONEMIDIIN) || defined(VSTMIDIIN))
 #include "Input/NULLMidiIn.h"
 #endif
 
-#ifdef WINMIDIIN
 #include "Input/WINMidiIn.h"
-#endif
-
-#ifndef DISABLE_GUI
-#ifdef QT_GUI
-
-#include <QApplication>
-#include "masterui.h"
-QApplication *app;
-
-#elif defined FLTK_GUI
 
 #include "UI/MasterUI.h"
-#endif // FLTK_GUI
-
-MasterUI *ui;
-
-#endif //DISABLE_GUI
-
-using namespace std;
-
-pthread_t thr1, thr2, thr3, thr4;
-Master   *master;
-int  swaplr    = 0; //1 for left-right swapping
-bool usejackit = false;
-
-#ifdef JACKAUDIOOUT
-#include "Output/JACKaudiooutput.h"
-#endif
-
-#ifdef JACK_RTAUDIOOUT
-#include "Output/JACKaudiooutput.h"
-#endif
 
 #ifdef PAAUDIOOUT
 #include "Output/PAaudiooutput.h"
 #endif
 
-#ifdef OSSAUDIOOUT
-#include "Output/OSSaudiooutput.h"
-OSSaudiooutput *audioout;
-#endif
+MasterUI *ui;
 
-#ifdef USE_LASH
-#include "Misc/LASHClient.h"
-LASHClient *lash;
-#endif
+using namespace std;
+
+pthread_t thr1;
+Master   *master;
+int  swaplr    = 0; //1 for left-right swapping
+bool usejackit = false;
 
 MidiIn *Midi;
-int     Pexitprogram = 0; //if the UI set this to 1, the program will exit
-
-/*
- * Try to get the realtime priority
- */
-void set_realtime()
-{
-#ifdef OS_LINUX
-    sched_param sc;
-
-    sc.sched_priority = 50;
-
-    //if you want get "sched_setscheduler undeclared" from compilation, you can safely remove the folowing line
-    sched_setscheduler(0, SCHED_FIFO, &sc);
-//    if (err==0) printf("Real-time");
-#endif
-}
-
-/*
- * Midi input thread
- */
-#if !(defined(WINMIDIIN) || defined(VSTMIDIIN))
-void *thread1(void *arg)
-{
-    MidiCmdType   cmdtype = MidiNoteOFF;
-    unsigned char cmdchan = 0, note = 0, vel = 0;
-    int cmdparams[MP_MAX_BYTES];
-    for(int i = 0; i < MP_MAX_BYTES; ++i)
-        cmdparams[i] = 0;
-
-    set_realtime();
-    while(Pexitprogram == 0) {
-        Midi->getmidicmd(cmdtype, cmdchan, cmdparams);
-        note = cmdparams[0];
-        vel  = cmdparams[1];
-
-        pthread_mutex_lock(&master->mutex);
-
-        if((cmdtype == MidiNoteON) && (note != 0))
-            master->NoteOn(cmdchan, note, vel);
-        if((cmdtype == MidiNoteOFF) && (note != 0))
-            master->NoteOff(cmdchan, note);
-        if(cmdtype == MidiController)
-            master->SetController(cmdchan, cmdparams[0], cmdparams[1]);
-
-        pthread_mutex_unlock(&master->mutex);
-    }
-
-    return 0;
-}
-#endif
-
-/*
- * Wave output thread (for OSS AUDIO out)
- */
-#if defined(OSSAUDIOOUT)
-//!(defined(JACKAUDIOOUT)||defined(JACK_RTAUDIOOUT)||defined(PAAUDIOOUT)||defined(VSTAUDIOOUT))
-
-void *thread2(void *arg)
-{
-    REALTYPE outputl[SOUND_BUFFER_SIZE];
-    REALTYPE outputr[SOUND_BUFFER_SIZE];
-
-    set_realtime();
-    while(Pexitprogram == 0) {
-        pthread_mutex_lock(&master->mutex);
-        master->AudioOut(outputl, outputr);
-        pthread_mutex_unlock(&master->mutex);
-
-#ifndef NONEAUDIOOUT
-        audioout->OSSout(outputl, outputr);
-#endif
-
-        /** /   int i,x,x2;
-            REALTYPE xx,xx2;
-
-                short int xsmps[SOUND_BUFFER_SIZE*2];
-            for (i=0;i<SOUND_BUFFER_SIZE;i++){//output to stdout
-                xx=-outputl[i]*32767;
-                xx2=-outputr[i]*32767;
-                if (xx<-32768) xx=-32768;
-                if (xx>32767) xx=32767;
-                if (xx2<-32768) xx2=-32768;
-                if (xx2>32767) xx2=32767;
-                x=(short int) xx;
-                x2=(short int) xx2;
-                xsmps[i*2]=x;xsmps[i*2+1]=x2;
-                };
-                write(1,&xsmps,SOUND_BUFFER_SIZE*2*2);
-
-                / * */
-    }
-    return 0;
-}
-#endif
+int Pexitprogram = 0; //if the UI set this to 1, the program will exit
 
 /*
  * User Interface thread
  */
 
-
-void *thread3(void *arg)
+void *thread1(void *arg)
 {
 #ifndef DISABLE_GUI
 
-#ifdef FLTK_GUI
     ui->showUI();
 
     while(Pexitprogram == 0) {
-#ifdef USE_LASH
-        string filename;
-        switch(lash->checkevents(filename)) {
-        case LASHClient::Save:
-            ui->do_save_master(filename.c_str());
-            lash->confirmevent(LASHClient::Save);
-            break;
-        case LASHClient::Restore:
-            ui->do_load_master(filename.c_str());
-            lash->confirmevent(LASHClient::Restore);
-            break;
-        case LASHClient::Quit:
-            Pexitprogram = 1;
-        default:
-            break;
-        }
-#endif //USE_LASH
-        Fl::wait();
-    }
 
-#elif defined QT_GUI
-    app = new QApplication(0, 0);
-    ui  = new MasterUI(master, 0);
-    ui->show();
-    app->exec();
-#endif //defined QT_GUI
+    Fl::wait();
+    }
 
 #endif //DISABLE_GUI
-    return 0;
-}
-
-/*
- * Sequencer thread (test)
- */
-void *thread4(void *arg)
-{
-    while(Pexitprogram == 0) {
-        int type, par1, par2, again, midichan;
-        for(int ntrack = 0; ntrack < NUM_MIDI_TRACKS; ntrack++) {
-            if(master->seq.play == 0)
-                break;
-            do {
-                again = master->seq.getevent(ntrack,
-                                             &midichan,
-                                             &type,
-                                             &par1,
-                                             &par2);
-//		printf("ntrack=%d again=%d\n",ntrack,again);
-                if(type > 0) {
-//	    printf("%d %d  %d %d %d\n",type,midichan,chan,par1,par2);
-
-//	if (cmdtype==MidiController) master->SetController(cmdchan,cmdparams[0],cmdparams[1]);
-
-
-
-                    pthread_mutex_lock(&master->mutex);
-                    if(type == 1) { //note_on or note_off
-                        if(par2 != 0)
-                            master->NoteOn(midichan, par1, par2);
-                        else
-                            master->NoteOff(midichan, par1);
-                    }
-                    pthread_mutex_unlock(&master->mutex);
-                }
-            } while(again > 0);
-        }
-//if (!realtime player) atunci fac asta
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#ifdef OS_LINUX
-        usleep(1000);
-#elif OS_WINDOWS
-        Sleep(1);
-#endif
-    }
-
     return 0;
 }
 
@@ -291,22 +82,16 @@ void *thread4(void *arg)
  * Program initialisation
  */
 
-
 void initprogram()
 {
     cerr.precision(1);
     cerr << std::fixed;
-#ifndef JACKAUDIOOUT
-#ifndef JACK_RTAUDIOOUT
-    cerr << "\nSample Rate = \t\t" << SAMPLE_RATE << endl;
-#endif
-#endif
+
     cerr << "Sound Buffer Size = \t" << SOUND_BUFFER_SIZE << " samples" << endl;
     cerr << "Internal latency = \t" << SOUND_BUFFER_SIZE * 1000.0
     / SAMPLE_RATE << " ms" << endl;
     cerr << "ADsynth Oscil.Size = \t" << OSCIL_SIZE << " samples" << endl;
 
-    //fflush(stderr);
     srand(time(NULL));
     denormalkillbuf = new REALTYPE [SOUND_BUFFER_SIZE];
     for(int i = 0; i < SOUND_BUFFER_SIZE; i++)
@@ -315,39 +100,10 @@ void initprogram()
     master = new Master();
     master->swaplr = swaplr;
 
-#if defined(JACKAUDIOOUT)
-    if(usejackit) {
-        bool tmp = JACKaudiooutputinit(master);
-#if defined(OSSAUDIOOUT)
-        if(!tmp)
-            cout << "\nUsing OSS instead." << endl;
-#else
-        if(!tmp)
-            exit(1);
-#endif
-        usejackit = tmp;
-    }
-#endif
-#if defined(OSSAUDIOOUT)
-    if(!usejackit)
-        audioout = new OSSaudiooutput();
-    else
-        audioout = NULL;
-#endif
-
-#ifdef JACK_RTAUDIOOUT
-    JACKaudiooutputinit(master);
-#endif
 #ifdef PAAUDIOOUT
     PAaudiooutputinit(master);
 #endif
 
-#ifdef ALSAMIDIIN
-    Midi = new ALSAMidiIn();
-#endif
-#ifdef OSSMIDIIN
-    Midi = new OSSMidiIn();
-#endif
 #if (defined(NONEMIDIIN) || (defined(VSTMIDIIN)))
     Midi = new NULLMidiIn();
 #endif
@@ -359,16 +115,7 @@ void initprogram()
 void exitprogram()
 {
     pthread_mutex_lock(&master->mutex);
-#ifdef OSSAUDIOOUT
-    delete (audioout);
-#endif
-#ifdef JACKAUDIOOUT
-    if(usejackit)
-        JACKfinish();
-#endif
-#ifdef JACK_RTAUDIOOUT
-    JACKfinish();
-#endif
+
 #ifdef PAAUDIOOUT
     PAfinish();
 #endif
@@ -378,10 +125,6 @@ void exitprogram()
 #endif
     delete (Midi);
     delete (master);
-
-#ifdef USE_LASH
-    delete (lash);
-#endif
 
 //    pthread_mutex_unlock(&master->mutex);
     delete [] denormalkillbuf;
@@ -417,16 +160,10 @@ int opterr = 0;
 #ifndef VSTAUDIOOUT
 int main(int argc, char *argv[])
 {
-#ifdef USE_LASH
-    lash = new LASHClient(&argc, &argv);
-#endif
-
     config.init();
     dump.startnow();
     int noui = 0;
-#ifdef JACKAUDIOOUT
-    usejackit = true; //use jack by default
-#endif
+
     cerr
     << "\nZynAddSubFX - Copyright (c) 2002-2009 Nasca Octavian Paul and others"
     << endl;
@@ -524,11 +261,6 @@ int main(int argc, char *argv[])
             noui = 1;
             break;
         case 'A':
-#ifdef JACKAUDIOOUT
-#ifdef OSSAUDIOOUT
-            usejackit = false;
-#endif
-#endif
             break;
         case 'l':
             tmp = 0;
@@ -610,12 +342,7 @@ int main(int argc, char *argv[])
         cout
         << "  -U , --no-gui\t\t\t\t Run ZynAddSubFX without user interface"
         << endl;
-#ifdef JACKAUDIOOUT
-#ifdef OSSAUDIOOUT
-        cout << "  -A , --not-use-jack\t\t\t Use OSS/ALSA instead of JACK"
-             << endl;
-#endif
-#endif
+
 #ifdef OS_WINDOWS
         cout
         <<
@@ -627,20 +354,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    //---------
-
     initprogram();
-
-#ifdef USE_LASH
-#ifdef ALSAMIDIIN
-    ALSAMidiIn *alsamidi = dynamic_cast<ALSAMidiIn *>(Midi);
-    if(alsamidi)
-        lash->setalsaid(alsamidi->getalsaid());
-#endif
-#ifdef JACKAUDIOOUT
-    lash->setjackname(JACKgetname());
-#endif
-#endif
 
     if(strlen(loadfile) > 1) {
         int tmp = master->loadXML(loadfile);
@@ -670,34 +384,13 @@ int main(int argc, char *argv[])
         }
     }
 
-
-#if !(defined(NONEMIDIIN) || defined(WINMIDIIN) || defined(VSTMIDIIN))
-    pthread_create(&thr1, NULL, thread1, NULL);
-#endif
-
-#ifdef OSSAUDIOOUT
-//!(defined(JACKAUDIOOUT)||defined(JACK_RTAUDIOOUT)||defined(PAAUDIOOUT)||defined(VSTAUDIOOUT))
-    if(!usejackit)
-        pthread_create(&thr2, NULL, thread2, NULL);
-#endif
-
-    /*It is not working and I don't know why
-    //drop the suid-root permisions
-    #if !(defined(JACKAUDIOOUT)||defined(PAAUDIOOUT)||defined(VSTAUDIOOUT)|| (defined (WINMIDIIN)) )
-          setuid(getuid());
-          seteuid(getuid());
-    //      setreuid(getuid(),getuid());
-    //      setregid(getuid(),getuid());
-    #endif
-    */
 #ifndef DISABLE_GUI
     if(noui == 0) {
         ui = new MasterUI(master, &Pexitprogram);
-        pthread_create(&thr3, NULL, thread3, NULL);
+        pthread_create(&thr1, NULL, thread1, NULL);
     }
 #endif
 
-    pthread_create(&thr4, NULL, thread4, NULL);
 #ifdef WINMIDIIN
     InitWinMidi(master);
 #endif
@@ -718,17 +411,17 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-
 #else
 
 #include "Output/VSTaudiooutput.h"
 
-#define main main_plugin
-extern "C" __declspec(dllexport) AEffect * main_plugin(
-    audioMasterCallback audioMaster);
+//define main main_plugin
+//extern "C" __declspec(dllexport) AEffect *main_plugin (audioMasterCallback audioMaster);
+#define main VSTPluginMain
+//AEffect *main (audioMasterCallback audioMaster);
+extern "C" __declspec(dllexport) AEffect *main (audioMasterCallback audioMaster);
 
 int instances = -1;
-
 AEffect *main(audioMasterCallback audioMaster)
 {
 //    if (audioMaster(0,audioMasterVersion,0,0,0,0)!=0) {
@@ -751,6 +444,13 @@ AEffect *main(audioMasterCallback audioMaster)
     return sintetizator->getAeffect();
 }
 
+/*AudioEffect* createEffectInstance (audioMasterCallback audioMaster)
+{
+    //AudioEffect *sintetizator = new VSTSynth(audioMaster);
+    //return sintetizator->getAeffect();
+    return new VSTSynth (audioMaster);
+}
+*/
 void *hInstance;
 BOOL WINAPI DllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpvReserved)
 {
@@ -762,24 +462,9 @@ void *thread(void *arg)
 {
     VSTSynth *vs = (VSTSynth *) arg;
 
-    /*    FILE *a=fopen("aaaa1","a");
-        fprintf(a,"%lx %lx %lx -i=%d\n",vs,0,vs->vmaster,instances);
-        fflush(a);fclose(a);
-    */
-
     vs->ui = new MasterUI(vs->vmaster, &vs->Pexitprogram);
 
-    /*    a=fopen("aaaa1","a");
-        fprintf(a,"%lx %lx %lx\n",vs,vs->ui->master,vs->vmaster);
-        fflush(a);fclose(a);
-    */
-
     vs->ui->showUI();
-
-    /*    a=fopen("aaaa1","a");
-        fprintf(a,"%lx %lx %lx\n",vs,vs->ui,vs->vmaster);
-        fflush(a);fclose(a);
-    */
 
     while(vs->Pexitprogram == 0)
         Fl::wait(0.01);
@@ -787,19 +472,14 @@ void *thread(void *arg)
     delete (vs->ui);
     Fl::wait(0.01);
 
-    /*    a=fopen("aaaa1","a");
-        fprintf(a,"EXIT\n");
-        fflush(a);fclose(a);
-    */
-
-
     pthread_exit(0);
     return 0;
 }
 
 //Parts of the VSTSynth class
-VSTSynth::VSTSynth(audioMasterCallback audioMaster):AudioEffectX(audioMaster, 1,
-                                                                 0)
+VSTSynth::VSTSynth (audioMasterCallback audioMaster)
+: AudioEffectX (audioMaster, 1,0)
+
 {
     instances++;
 
@@ -836,8 +516,6 @@ VSTSynth::VSTSynth(audioMasterCallback audioMaster):AudioEffectX(audioMaster, 1,
 //    suspend();
 }
 
-
-
 VSTSynth::~VSTSynth()
 {
     this->Pexitprogram = 1;
@@ -852,7 +530,7 @@ VSTSynth::~VSTSynth()
     instances--;
 }
 
-long VSTSynth::processEvents(VstEvents *events)
+int VSTSynth::processEvents(VstEvents *events)
 {
     for(int i = 0; i < events->numEvents; i++) {
         //debug stuff
@@ -894,11 +572,11 @@ long VSTSynth::processEvents(VstEvents *events)
     return 1;
 }
 
-long VSTSynth::getChunk(void **data, bool isPreset)
+int VSTSynth::getChunk(void **data, bool isPreset)
 {
     int size = 0;
     size = vmaster->getalldata((char **)data);
-    return (long)size;
+    return (int)size;
 }
 
 long VSTSynth::setChunk(void *data, long size, bool isPreset)

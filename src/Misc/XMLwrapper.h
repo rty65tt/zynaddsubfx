@@ -108,6 +108,10 @@ class XMLwrapper
          */
         void endbranch();
 
+        // we always save with a blank first line
+        const char *removeBlanks(const char *c)
+        {while (isspace(*c)) ++c; return c;}
+
         /**
          * Loads file into XMLwrapper.
          * @param filename file to be loaded

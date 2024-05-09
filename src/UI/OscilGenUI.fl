@@ -1,8 +1,9 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0109 
+version 1.0110 
 header_name {.h} 
 code_name {.cc}
-decl {//Copyright (c) 2002-2005 Nasca Octavian Paul} {} 
+decl {//Copyright (c) 2002-2005 Nasca Octavian Paul} {selected
+} 
 
 decl {//License: GNU GPL version 2 or later} {} 
 
@@ -119,8 +120,7 @@ for (i=0;i<n;i++){
    int val=(int) ((ly-2)*x);
    if (val>0) fl_line(ox+tmp,oy+ly-2-val,ox+tmp,oy+ly-2);
 }
-delete [] spc;} {selected
-    }
+delete [] spc;} {}
   }
   decl {OscilGen *oscil;} {}
   decl {int oscbase;} {}
@@ -129,7 +129,9 @@ delete [] spc;} {selected
 
 class PSlider {: {public Fl_Slider}
 } {
-  Function {PSlider(int x,int y, int w, int h, const char *label=0):Fl_Slider(x,y,w,h,label)} {} {}
+  Function {PSlider(int x,int y, int w, int h, const char *label=0):Fl_Slider(x,y,w,h,label)} {} {
+    code {;} {}
+  }
   Function {handle(int event)} {return_type int
   } {
     code {int X=x(),Y=y(),W=w(),H=h();
@@ -509,6 +511,14 @@ if ((oscil->Pcurrentbasefunc==0)||(oscil->Pcurrentbasefunc==127)) basefuncmodula
           }
           MenuItem {} {
             label Sqr
+            xywh {122 122 100 20} labelfont 1 labelsize 11
+          }
+          MenuItem {} {
+            label Spike
+            xywh {122 122 100 20} labelfont 1 labelsize 11
+          }
+          MenuItem {} {
+            label Circle
             xywh {122 122 100 20} labelfont 1 labelsize 11
           }
         }
