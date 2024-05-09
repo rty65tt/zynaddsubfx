@@ -9,7 +9,6 @@ set(zynaddsubfx_params_SRCS
 	PresetsArray.cpp
 	PresetsStore.cpp
 	SUBnoteParameters.cpp
-
 )
 
 add_library(zynaddsubfx_params STATIC

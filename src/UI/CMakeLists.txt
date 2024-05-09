@@ -29,4 +29,4 @@ add_library(zynaddsubfx_gui STATIC
 	${zynaddsubfx_gui_FLTK_UI_SRCS}
 	)
 
-target_link_libraries(zynaddsubfx_gui ${FLTK_LIBRARIES} ${MYFLTK_LIBRARIES})
+#target_link_libraries(zynaddsubfx_gui ${FLTK_LIBRARIES} ${FLTKLIBRARIES})

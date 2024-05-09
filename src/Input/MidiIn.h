@@ -42,7 +42,7 @@ class MidiIn
         * @param parameters for the event*/
         virtual void getmidicmd(MidiCmdType &cmdtype,
                                 unsigned char &cmdchan,
-                                int *cmdparams) = 0;
+                                int *cmdparams){};
         int getcontroller(unsigned char b);
     protected:
         bool inputok; /**<1 if I can read midi bytes from input ports*/

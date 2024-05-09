@@ -495,8 +495,10 @@ void PADnoteParameters::generatespectrum_otherModes(REALTYPE *spectrum,
         spectrum[i] = 0.0;
 
     REALTYPE harmonics[OSCIL_SIZE / 2];
-    for(int i = 0; i < OSCIL_SIZE / 2; i++)
+    for (int i = 0; i < OSCIL_SIZE / 2; i++)
+    {
         harmonics[i] = 0.0;
+    }
     //get the harmonic structure from the oscillator (I am using the frequency amplitudes, only)
     oscilgen->get(harmonics, basefreq, false);
 

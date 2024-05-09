@@ -1,5 +1,5 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0107 
+version 1.0110 
 header_name {.h} 
 code_name {.cc}
 decl {//Copyright (c) 2002-2005 Nasca Octavian Paul} {} 
@@ -24,20 +24,28 @@ decl {\#include <FL/Fl_File_Chooser.H>} {public
 decl {\#include "../Misc/Master.h"} {public
 } 
 
+decl {\#include "../Misc/Part.h"} {selected public
+} 
+
 decl {\#include "../Misc/Bank.h"} {public
 } 
 
 decl {\#include "../Misc/Config.h"} {public
 } 
 
+decl {\#include "../Misc/Util.h"} {public
+} 
+
 class BankProcess_ {} {
   Function {process()} {open return_type {virtual void}
-  } {}
+  } {
+    code {;} {}
+  }
   decl {Bank *bank;} {public
   }
 } 
 
-class BankSlot {open : {public Fl_Button,BankProcess_}
+class BankSlot {: {public Fl_Button,BankProcess_}
 } {
   Function {BankSlot(int x,int y, int w, int h, const char *label=0):Fl_Button(x,y,w,h,label)} {} {
     code {what=NULL;
@@ -59,8 +67,7 @@ int tmp=Fl_Button::handle(event);
 if ((*what!=0) && Fl::event_inside(this)) (bp->*fnc)();
 return(tmp);} {}
   }
-  Function {init(int nslot_, int *what_, int *whatslot_,void (BankProcess_:: *fnc_)(void),BankProcess_ *bp_,Bank *bank_,int *nselected_)} {open
-  } {
+  Function {init(int nslot_, int *what_, int *whatslot_,void (BankProcess_:: *fnc_)(void),BankProcess_ *bp_,Bank *bank_,int *nselected_)} {} {
     code {nslot=nslot_;
 what=what_;
 whatslot=whatslot_;
@@ -320,7 +327,8 @@ if (bank->locked()){
     clearbutton->activate();
     swapbutton->activate();
 };
-for (int i=0;i<BANK_SIZE;i++) bs[i]->refresh();} {}
+for (int i=0;i<BANK_SIZE;i++) 
+   bs[i]->refresh();} {}
   }
   Function {removeselection()} {} {
     code {if (nselected>=0) {

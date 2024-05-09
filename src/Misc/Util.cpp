@@ -38,6 +38,7 @@ int OSCIL_SIZE  = 1024;
 Config    config;
 REALTYPE *denormalkillbuf;
 
+bool isPlugin = false;
 
 /*
  * Transform the velocity according the scaling parameter (velocity sensing)

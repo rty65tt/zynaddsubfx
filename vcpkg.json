@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "vcpkg-pkgconfig-get-modules",
+    "pkgconf",
+    "fftw3",
+    "zlib",
+    "fltk",
+    "portaudio"
+  ]
+}

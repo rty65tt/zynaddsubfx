@@ -67,7 +67,7 @@ class Master
          * @return the datasize*/
         int getalldata(char **data);
         /**put all data from the *data array to zynaddsubfx parameters (used for VST)*/
-        void putalldata(char *data, int size);
+        void putalldata(char *data);
 
 
 
@@ -75,8 +75,11 @@ class Master
         void NoteOn(unsigned char chan,
                     unsigned char note,
                     unsigned char velocity);
+        void noteOn(char chan, char note, char velocity);
         void NoteOff(unsigned char chan, unsigned char note);
+        void noteOff(char chan, char note);
         void SetController(unsigned char chan, unsigned int type, int par);
+        void setController(char chan, int type, int par);
         //void NRPN...
 
 
@@ -93,6 +96,9 @@ class Master
 
 
         void partonoff(int npart, int what);
+
+        //Set callback to run when master changes
+        void setMasterChangedCallback(void(*cb)(void*,Master*),void *ptr);
 
         /**parts \todo see if this can be made to be dynamic*/
         Part *part[NUM_MIDI_PARTS];
@@ -170,6 +176,10 @@ class Master
                     unsigned char velocity);
         void noteoff(unsigned char chan, unsigned char note);
         void setcontroller(unsigned char chan, unsigned int type, int par);
+
+        //Callback When Master changes
+        void(*mastercb)(void*,Master*);
+        void* mastercb_ptr;
 };
 
 

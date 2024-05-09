@@ -120,8 +120,10 @@ ADnote::ADnote(ADnoteParameters *pars,
         unison_stereo_spread[nvoice] =
             pars->VoicePar[nvoice].Unison_stereo_spread / 127.0;
         int unison = pars->VoicePar[nvoice].Unison_size;
-        if(unison < 1)
+        if (unison < 1)
+        {
             unison = 1;
+        }
 
         //compute unison
         unison_size[nvoice] = unison;
@@ -668,8 +670,8 @@ void ADnote::ADlegatonote(REALTYPE freq,
             if((partparams->VoicePar[vc].FMSmp->Padaptiveharmonics != 0)
                || (NoteVoicePar[nvoice].FMEnabled == MORPH)
                || (NoteVoicePar[nvoice].FMEnabled == RING_MOD))
-                tmp = getFMvoicebasefreq(nvoice);
-            ;
+                { tmp = getFMvoicebasefreq(nvoice); }
+            
             if(!partparams->GlobalPar.Hrandgrouping)
                 partparams->VoicePar[vc].FMSmp->newrandseed(rand());
 
@@ -1057,8 +1059,10 @@ void ADnote::setfreq(int nvoice, REALTYPE in_freq)
     for(int k = 0; k < unison_size[nvoice]; k++) {
         REALTYPE freq  = fabs(in_freq) * unison_freq_rap[nvoice][k];
         REALTYPE speed = freq * REALTYPE(OSCIL_SIZE) / (REALTYPE) SAMPLE_RATE;
-        if(speed > OSCIL_SIZE)
+        if (speed > OSCIL_SIZE)
+        {
             speed = OSCIL_SIZE;
+        }
 
         F2I(speed, oscfreqhi[nvoice][k]);
         oscfreqlo[nvoice][k] = speed - floor(speed);
@@ -1070,11 +1074,13 @@ void ADnote::setfreq(int nvoice, REALTYPE in_freq)
  */
 void ADnote::setfreqFM(int nvoice, REALTYPE in_freq)
 {
-    for(int k = 0; k < unison_size[nvoice]; k++) {
-        REALTYPE freq  = fabs(in_freq) * unison_freq_rap[nvoice][k];
-        REALTYPE speed = freq * REALTYPE(OSCIL_SIZE) / (REALTYPE) SAMPLE_RATE;
-        if(speed > OSCIL_SIZE)
+    for (int k = 0; k < unison_size[nvoice]; k++) {
+        REALTYPE freq = fabs(in_freq) * unison_freq_rap[nvoice][k];
+        REALTYPE speed = freq * REALTYPE(OSCIL_SIZE) / (REALTYPE)SAMPLE_RATE;
+        if (speed > OSCIL_SIZE)
+        {
             speed = OSCIL_SIZE;
+        }
 
         F2I(speed, oscfreqhiFM[nvoice][k]);
         oscfreqloFM[nvoice][k] = speed - floor(speed);
@@ -1254,8 +1260,10 @@ inline void ADnote::fadein(REALTYPE *smps) const
             zerocrossings++;                                  //this is only the possitive crossings
 
     REALTYPE tmp = (SOUND_BUFFER_SIZE - 1.0) / (zerocrossings + 1) / 3.0;
-    if(tmp < 8.0)
+    if (tmp < 8.0)
+    {
         tmp = 8.0;
+    }
 
     int n;
     F2I(tmp, n); //how many samples is the fade-in

@@ -91,8 +91,10 @@ void Chorus::out(const Stereo<float *> &input)
 
         //compute the delay in samples using linear interpolation between the lfo delays
         mdel = (dl1 * (SOUND_BUFFER_SIZE - i) + dl2 * i) / SOUND_BUFFER_SIZE;
-        if(++dlk >= maxdelay)
+        if (++dlk >= maxdelay)
+        {
             dlk = 0;
+        }
         REALTYPE tmp = dlk - mdel + maxdelay * 2.0; //where should I get the sample from
 
         F2I(tmp, dlhi);
